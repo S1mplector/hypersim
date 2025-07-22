@@ -1,26 +1,18 @@
 """
 Basic example of visualizing a 4D tesseract using the hypersim package.
 """
-import matplotlib.pyplot as plt
 from hypersim.objects import Hypercube
-from hypersim.visualization import MatplotlibRenderer
+from hypersim.visualization.renderers.pygame import PygameRenderer, Color
 
 def main():
     # Create a renderer
-    renderer = MatplotlibRenderer()
+    renderer = PygameRenderer(title="Basic Tesseract", background_color=Color(20, 20, 30))
     
     # Create and add a hypercube to the scene
     hypercube = Hypercube(size=1.5)
-    renderer.add_hypercube(hypercube, color='blue', alpha=0.6)
+    renderer.objects.append(hypercube)
     
-    # Set the title
-    plt.title('4D Tesseract Projection')
-    
-    # Start the animation
-    _ = renderer.animate_rotation(frames=360, interval=50)
-    
-    # Display the plot
-    renderer.show()
+    renderer.run()
 
 if __name__ == "__main__":
     main()

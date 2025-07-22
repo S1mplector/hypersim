@@ -3,10 +3,9 @@
 import argparse
 from typing import Any
 
-from hypersim.engine.scene import Scene
-from hypersim.engine.simulation import Simulation
+# No simulation engine needed for simple demo
 from hypersim.objects import Hypercube
-from hypersim.visualization import MatplotlibRenderer
+from hypersim.visualization.renderers.pygame import PygameRenderer, Color
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -28,17 +27,12 @@ def main(argv: list[str] | None = None) -> None:
 
 def _run_tesseract_demo() -> None:
     """Run the basic tesseract visualization using the internal architecture."""
-    scene = Scene()
     cube = Hypercube(size=1.5)
-    scene.add(cube)
 
-    renderer = MatplotlibRenderer()
-    renderer.add_hypercube(cube)
-    renderer.animate_rotation()
+    renderer = PygameRenderer(title="Tesseract Demo", background_color=Color(10, 10, 20))
+    renderer.objects.append(cube)
+    
 
-    sim = Simulation(scene, tick=1 / 60)
-    sim.set_step_callback(lambda dt: None)  # no-op for now
-    # Run simulation for demo purposes in a blocking manner via matplotlib show
-    renderer.show()
+    renderer.run()
 
 __all__ = ["main"]
