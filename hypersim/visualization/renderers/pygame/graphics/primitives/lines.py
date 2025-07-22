@@ -25,7 +25,7 @@ def draw_line_4d(
     camera: Any = None,
     zbuffer: Optional[np.ndarray] = None
 ) -> None:
-    """Draw a 4D line on the given surface.
+    """Draw a 4D line on the given surface with improved clipping and rendering.
     
     Args:
         surface: The surface to draw on
@@ -40,54 +40,126 @@ def draw_line_4d(
         raise ValueError("Camera instance is required for 4D projection")
     
     # Project 4D points to 2D screen space
-    x1, y1, z1 = camera.project_4d_to_2d(start)
-    x2, y2, z2 = camera.project_4d_to_2d(end)
-    
-    # Skip drawing if both points are behind the camera
-    if z1 > 5 and z2 > 5:
+    try:
+        x1, y1, z1 = camera.project_4d_to_2d(start)
+        x2, y2, z2 = camera.project_4d_to_2d(end)
+    except Exception as e:
+        # Skip if projection fails
         return
     
-    # Clip line if it crosses the near plane
-    if z1 > 0 and z2 < 0:
-        # Line crosses from behind to in front of camera
-        t = -z1 / (z2 - z1) if (z2 - z1) != 0 else 0.0
+    # Skip drawing if both points are behind the camera
+    near_plane = 0.1
+    far_plane = 100.0
+    
+    # Clip line against near and far planes
+    if z1 < near_plane and z2 < near_plane:
+        return  # Both points behind near plane
+    if z1 > far_plane and z2 > far_plane:
+        return  # Both points beyond far plane
+    
+    # Clip line against near plane
+    if z1 < near_plane:
+        t = (near_plane - z1) / (z2 - z1)
         x1 = x1 + t * (x2 - x1)
         y1 = y1 + t * (y2 - y1)
-        z1 = 0
-    elif z1 < 0 and z2 > 0:
-        # Line crosses from in front to behind camera
-        t = -z2 / (z1 - z2) if (z1 - z2) != 0 else 0.0
+        z1 = near_plane
+    elif z2 < near_plane:
+        t = (near_plane - z2) / (z1 - z2)
         x2 = x2 + t * (x1 - x2)
         y2 = y2 + t * (y1 - y2)
-        z2 = 0
+        z2 = near_plane
     
-    # Skip if line is completely outside the viewport
-    if ((x1 < 0 and x2 < 0) or (x1 > surface.get_width() and x2 > surface.get_width()) or
-        (y1 < 0 and y2 < 0) or (y1 > surface.get_height() and y2 > surface.get_height())):
+    # Skip if line is completely outside the viewport with some padding
+    viewport_padding = 100  # pixels
+    width, height = surface.get_size()
+    min_x = -viewport_padding
+    max_x = width + viewport_padding
+    min_y = -viewport_padding
+    max_y = height + viewport_padding
+    
+    # Cohen-Sutherland line clipping
+    def compute_outcode(x, y):
+        code = 0
+        if x < min_x: code |= 1
+        if x > max_x: code |= 2
+        if y < min_y: code |= 4
+        if y > max_y: code |= 8
+        return code
+    
+    outcode1 = compute_outcode(x1, y1)
+    outcode2 = compute_outcode(x2, y2)
+    accept = False
+    
+    while True:
+        if not (outcode1 | outcode2):  # Both points inside viewport
+            accept = True
+            break
+        elif outcode1 & outcode2:  # Both points outside viewport on same side
+            return
+        else:
+            # Calculate intersection
+            x, y = 0, 0
+            outcode = outcode1 if outcode1 else outcode2
+            
+            # Calculate intersection with viewport edges
+            if outcode & 8:  # Top
+                x = x1 + (x2 - x1) * (max_y - y1) / (y2 - y1)
+                y = max_y
+            elif outcode & 4:  # Bottom
+                x = x1 + (x2 - x1) * (min_y - y1) / (y2 - y1)
+                y = min_y
+            elif outcode & 2:  # Right
+                y = y1 + (y2 - y1) * (max_x - x1) / (x2 - x1)
+                x = max_x
+            elif outcode & 1:  # Left
+                y = y1 + (y2 - y1) * (min_x - x1) / (x2 - x1)
+                x = min_x
+            
+            # Update the point outside the viewport
+            if outcode == outcode1:
+                x1, y1 = x, y
+                outcode1 = compute_outcode(x1, y1)
+            else:
+                x2, y2 = x, y
+                outcode2 = compute_outcode(x2, y2)
+    
+    if not accept:
         return
     
     # Simple z-buffering (if provided)
     if zbuffer is not None:
-        # For simplicity, we'll just use the midpoint depth
-        z = (z1 + z2) / 2
-        # Cast midpoint coordinates to integers for safe NumPy indexing
-        x = int((x1 + x2) // 2)
-        y = int((y1 + y2) // 2)
-        
-        # Skip if there's a closer pixel in the z-buffer
-        if (0 <= x < zbuffer.shape[0] and 0 <= y < zbuffer.shape[1] and 
-            z > zbuffer[x, y]):
-            return
-        
-        # Update z-buffer (simplified)
-        if 0 <= x < zbuffer.shape[0] and 0 <= y < zbuffer.shape[1]:
-            zbuffer[x, y] = z
+        # Use the closer of the two z-values for z-buffering
+        z = min(z1, z2)
+        # Sample multiple points along the line for better z-buffering
+        num_samples = 5
+        for i in range(num_samples):
+            t = i / (num_samples - 1)
+            x = int(x1 * (1 - t) + x2 * t)
+            y = int(y1 * (1 - t) + y2 * t)
+            
+            if 0 <= x < zbuffer.shape[0] and 0 <= y < zbuffer.shape[1]:
+                if z < zbuffer[x, y]:
+                    zbuffer[x, y] = z
+                else:
+                    # Optional: early exit if we hit an occluding surface
+                    continue
     
-    # Draw the line
-    pygame.draw.line(
-        surface, 
-        color.to_tuple(), 
-        (int(x1), int(y1)), 
-        (int(x2), int(y2)), 
-        width
-    )
+    # Draw the line with anti-aliasing
+    try:
+        pygame.draw.aaline(
+            surface,
+            color.to_tuple(),
+            (int(round(x1)), int(round(y1))),
+            (int(round(x2)), int(round(y2))),
+            True  # Blend with the existing pixels
+        )
+    except:
+        # Fall back to regular line if aaline fails
+        pygame.draw.line(
+            surface,
+            color.to_tuple(),
+            (int(round(x1)), int(round(y1))),
+            (int(round(x2)), int(round(y2))),
+            width
+        )
+    

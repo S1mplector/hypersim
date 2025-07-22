@@ -23,6 +23,44 @@ def create_vector_4d(x: float = 0.0, y: float = 0.0, z: float = 0.0, w: float = 
     """
     return np.array([x, y, z, w], dtype=np.float32)
 
+def create_translation_matrix_4d(x: float = 0.0, y: float = 0.0, z: float = 0.0, w: float = 0.0) -> Matrix4D:
+    """Create a 4D translation matrix.
+    
+    Args:
+        x: Translation along X axis
+        y: Translation along Y axis
+        z: Translation along Z axis
+        w: Translation along W axis (4th dimension)
+        
+    Returns:
+        A 4x4 translation matrix
+    """
+    matrix = np.eye(4, dtype=np.float32)
+    matrix[0, 3] = x
+    matrix[1, 3] = y
+    matrix[2, 3] = z
+    matrix[3, 3] = w
+    return matrix
+
+def create_scale_matrix_4d(sx: float = 1.0, sy: float = 1.0, sz: float = 1.0, sw: float = 1.0) -> Matrix4D:
+    """Create a 4D scaling matrix.
+    
+    Args:
+        sx: Scale factor along X axis
+        sy: Scale factor along Y axis
+        sz: Scale factor along Z axis
+        sw: Scale factor along W axis (4th dimension)
+        
+    Returns:
+        A 4x4 scaling matrix
+    """
+    return np.array([
+        [sx, 0, 0, 0],
+        [0, sy, 0, 0],
+        [0, 0, sz, 0],
+        [0, 0, 0, sw]
+    ], dtype=np.float32)
+
 def create_rotation_matrix_4d(angle_xy: float = 0.0, angle_xz: float = 0.0,
                            angle_xw: float = 0.0, angle_yz: float = 0.0,
                            angle_yw: float = 0.0, angle_zw: float = 0.0) -> Matrix4D:
