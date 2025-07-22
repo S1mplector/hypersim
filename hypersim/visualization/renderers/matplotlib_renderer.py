@@ -61,44 +61,60 @@ class MatplotlibRenderer:
         Returns:
             The animation object
         """
+        # Store original vertices for each line
+        for line, (start_idx, end_idx) in self.lines:
+            # For 3D lines in matplotlib, we can access the data directly
+            # The line's data is stored in line._verts3d
+            # We'll use the indices to reconstruct the 4D coordinates
+            w1 = 1 if start_idx & 8 else -1
+            z1 = 1 if start_idx & 4 else -1
+            y1 = 1 if start_idx & 2 else -1
+            x1 = 1 if start_idx & 1 else -1
+            
+            w2 = 1 if end_idx & 8 else -1
+            z2 = 1 if end_idx & 4 else -1
+            y2 = 1 if end_idx & 2 else -1
+            x2 = 1 if end_idx & 1 else -1
+            
+            # Scale by the hypercube size (assuming it's the same for all dimensions)
+            scale = 0.5  # Since we're using -1 to 1 range
+            line._original_vertices = np.array([
+                [x1 * scale, y1 * scale, z1 * scale, w1 * scale],
+                [x2 * scale, y2 * scale, z2 * scale, w2 * scale]
+            ])
+        
         def update(frame):
             # Rotate in XY and ZW planes
-            angle_xy = frame * 0.02
-            angle_zw = frame * 0.015
+            angle_xy = np.radians(frame)
+            angle_zw = np.radians(frame * 0.7)  # Different rotation speed for more interesting motion
             
             # Update all lines in the scene
-            for line, (start_idx, end_idx) in self.lines:
-                # Get the original vertices (stored in line's user data)
-                if not hasattr(line, '_original_vertices'):
-                    line._original_vertices = np.array([
-                        [line._x[0], line._y[0], line._z[0], 1],
-                        [line._x[1], line._y[1], line._z[1], 1]
-                    ])
-                
+            for line, _ in self.lines:
                 # Apply 4D rotation
                 from hypersim.core.math_utils import rotation_matrix_4d
                 rot_xy = rotation_matrix_4d(0, 1, angle_xy)
                 rot_zw = rotation_matrix_4d(2, 3, angle_zw)
                 rotation = rot_xy @ rot_zw
                 
-                # Apply rotation and project to 3D
+                # Apply rotation to original vertices and project to 3D
                 rotated = np.dot(line._original_vertices, rotation.T)
                 projected = perspective_projection_4d_to_3d(rotated, self.distance)
                 
                 # Update line data
-                line.set_data(
-                    [projected[0, 0], projected[1, 0]],
-                    [projected[0, 1], projected[1, 1]]
-                )
-                line.set_3d_properties([projected[0, 2], projected[1, 2]])
+                line.set_data(projected[:, 0], projected[:, 1])
+                line.set_3d_properties(projected[:, 2])
             
             # Rotate the view for better visualization
             self.ax.view_init(elev=20, azim=frame/2)
             return [line for line, _ in self.lines]
         
         # Create and return the animation
-        return FuncAnimation(
+        ani = FuncAnimation(
             self.fig, update, frames=frames, interval=interval, blit=False)
+        
+        # Make sure we keep a reference to the animation to prevent it from being garbage collected
+        self._animation = ani
+        return ani
     
     def show(self):
         """Display the plot."""
