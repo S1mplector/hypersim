@@ -121,12 +121,24 @@ def perspective_projection_4d_to_3d(points_4d: np.ndarray, distance: float = 5.0
     # Ensure input is at least 2D
     points_4d = np.atleast_2d(points_4d)
     
-    # Calculate perspective factor (w' = distance / (distance + w))
+    # 4D perspective projection: project from 4D to 3D hyperplane
+    # The correct formula for 4D perspective projection is:
+    # For each point (x, y, z, w), project to (x', y', z') where:
+    # x' = x * distance / (distance - w)
+    # y' = y * distance / (distance - w) 
+    # z' = z * distance / (distance - w)
+    
     w = points_4d[:, 3]
-    perspective = distance / (distance + w)
+    
+    # Avoid division by zero and handle points behind the camera
+    denominator = distance - w
+    # Add small epsilon to avoid division by zero
+    denominator = np.where(np.abs(denominator) < 1e-6, 1e-6, denominator)
+    
+    perspective_factor = distance / denominator
     
     # Apply perspective to x, y, z coordinates
-    points_3d = points_4d[:, :3] * perspective[:, np.newaxis]
+    points_3d = points_4d[:, :3] * perspective_factor[:, np.newaxis]
     
     return points_3d
 

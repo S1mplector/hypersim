@@ -85,11 +85,20 @@ class PygameRenderer:
     # Projection helpers
     # -----------------------------------------------------------------------
     def _project_4d_to_2d(self, p: Vector4D) -> Tuple[int, int, float]:
-        view_point = p  # currently skipping 4-D look-at for simplicity
-        projected = perspective_projection_4d_to_3d(view_point[np.newaxis, :], self.distance)[0]
-        x = int(projected[0] * 100 + self.width // 2)
-        y = int(-projected[1] * 100 + self.height // 2)
-        return x, y, projected[2]
+        # Improved 4D projection using W-based scaling to prevent vertex collapse
+        x, y, z, w = p
+        
+        # Use W coordinate to scale the X,Y coordinates (prevents symmetrical collapse)
+        scale = 1.0 / (1.0 + abs(w) * 0.3)  # Scale based on W distance
+        
+        # Apply scaling and convert to screen coordinates
+        screen_x = int(x * scale * 120 + self.width // 2)   # Increased scale factor
+        screen_y = int(-y * scale * 120 + self.height // 2)  # Increased scale factor
+        
+        # Use Z coordinate for depth (for potential z-buffering)
+        depth = z * scale
+        
+        return screen_x, screen_y, depth
 
     # -----------------------------------------------------------------------
     # Rendering primitives
@@ -101,7 +110,8 @@ class PygameRenderer:
     def draw_line_4d(self, s: Vector4D, e: Vector4D, color: Color, width: int = 1) -> None:
         x1, y1, z1 = self._project_4d_to_2d(s)
         x2, y2, z2 = self._project_4d_to_2d(e)
-        if z1 > 5 and z2 > 5:
+        # Simple near-plane clipping based on current projection distance
+        if z1 > self.distance and z2 > self.distance:
             return
         pygame.draw.line(self.screen, color.to_tuple(), (x1, y1), (x2, y2), width)
 
@@ -109,9 +119,12 @@ class PygameRenderer:
     # Public API
     # -----------------------------------------------------------------------
     def render_hypercube(self, hypercube, color: Color = Color(0, 255, 0), width: int = 1) -> None:
-        t = getattr(hypercube, "transform", np.eye(4, dtype=np.float32))
+        # Get the transformed vertices from the hypercube
+        transformed_vertices = hypercube.get_transformed_vertices()
+        
+        # Draw all edges using the transformed vertices
         for a, b in hypercube.edges:
-            self.draw_line_4d(t @ hypercube.vertices[a], t @ hypercube.vertices[b], color, width)
+            self.draw_line_4d(transformed_vertices[a], transformed_vertices[b], color, width)
 
     # Event loop ---------------------------------------------------------------
     def handle_events(self) -> bool:
@@ -160,9 +173,17 @@ class PygameRenderer:
         return True
 
     def update(self, dt: float) -> None:
+        # Apply continuous 4D rotations to any object that supports it
         for obj in self.objects:
             if hasattr(obj, "rotate"):
-                obj.rotate(angle_xy=dt * 0.5, angle_zw=dt * 0.7)
+                obj.rotate(
+                    angle_xy=dt * 0.4,  # XY rotation (3D spin)
+                    angle_xw=dt * 0.6,  # XW rotation (4D fold)
+                    angle_yw=dt * 0.5,  # YW rotation (4D fold)
+                    angle_zw=dt * 0.3,  # ZW rotation (4D spin)
+                )
+        
+        # FPS counter update
         self.frame_count += 1
         now = pygame.time.get_ticks()
         if now - self.last_fps_update > 1000:

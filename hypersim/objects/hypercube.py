@@ -84,6 +84,16 @@ class Hypercube:
             angle_yz=angle_yz, angle_yw=angle_yw, angle_zw=angle_zw
         )
         self.transform = np.dot(rot_matrix, self.transform)
+
+    def update(self, dt: float) -> None:
+        """Automatically rotate the hypercube over time.
+
+        Args:
+            dt: Time delta in seconds since last update.
+        """
+        # Rotate a bit in two planes for continuous spinning
+        spin_speed = 1.0  # radians per second
+        self.rotate(angle_xy=spin_speed * dt, angle_xw=spin_speed * dt)
     
     def scale(self, factor: float) -> None:
         """Scale the hypercube by a uniform factor.
@@ -97,17 +107,19 @@ class Hypercube:
     
     def get_transformed_vertices(self) -> np.ndarray:
         """Get the vertices after applying the current transform."""
-        # Convert to homogeneous coordinates
+        # The vertices are already 4D, so we can apply the 4x4 transform directly
+        # Add homogeneous coordinate (w=1) for proper 4D transformation
         homogeneous = np.column_stack([
             self._vertices,
             np.ones(len(self._vertices))
         ])
         
-        # Apply transform
-        transformed = np.dot(homogeneous, self.transform.T)
+        # Apply transform (homogeneous is now 5D: [x,y,z,w,1])
+        # We need a 5x5 transform matrix, but we only have 4x4
+        # Let's use the 4D vertices directly with the 4x4 transform
+        transformed = np.dot(self._vertices, self.transform[:4, :4].T) + self.transform[:4, 3]
         
-        # Convert back from homogeneous coordinates
-        return transformed[:, :4]
+        return transformed
     
     def render(self, renderer) -> None:
         """Render the hypercube using the specified renderer.
