@@ -125,6 +125,36 @@ class PygameRenderer:
         # Draw all edges using the transformed vertices
         for a, b in hypercube.edges:
             self.draw_line_4d(transformed_vertices[a], transformed_vertices[b], color, width)
+    
+    def render_simplex(self, simplex, color: Color = Color(255, 100, 0), width: int = 1) -> None:
+        """Render a 4D simplex object.
+        
+        Args:
+            simplex: The 4D simplex object to render
+            color: Color to draw the simplex edges
+            width: Line width for drawing edges
+        """
+        # Get the transformed vertices from the simplex
+        transformed_vertices = simplex.get_transformed_vertices()
+        
+        # Draw all edges using the transformed vertices
+        for a, b in simplex.edges:
+            self.draw_line_4d(transformed_vertices[a], transformed_vertices[b], color, width)
+    
+    def render_4d_object(self, obj, color: Color = Color(0, 255, 255), width: int = 1) -> None:
+        """Generic method to render any 4D object with vertices and edges.
+        
+        Args:
+            obj: Any 4D object with get_transformed_vertices() method and edges attribute
+            color: Color to draw the object edges
+            width: Line width for drawing edges
+        """
+        # Get the transformed vertices from the object
+        transformed_vertices = obj.get_transformed_vertices()
+        
+        # Draw all edges using the transformed vertices
+        for a, b in obj.edges:
+            self.draw_line_4d(transformed_vertices[a], transformed_vertices[b], color, width)
 
     # Event loop ---------------------------------------------------------------
     def handle_events(self) -> bool:

@@ -186,3 +186,25 @@ class PygameRenderer:
             start = transform @ hypercube.vertices[a]
             end = transform @ hypercube.vertices[b]
             self.draw_line_4d(start, end, color, width)
+
+    def render_simplex(
+        self,
+        simplex: Any,
+        color: Color = Color(255, 140, 0),
+        width: int = 1,
+    ) -> None:
+        """Render a 4-D simplex (5-cell)."""
+        verts = simplex.get_transformed_vertices()
+        for a, b in simplex.edges:
+            self.draw_line_4d(verts[a], verts[b], color, width)
+
+    def render_4d_object(
+        self,
+        obj: Any,
+        color: Color = Color(0, 255, 255),
+        width: int = 1,
+    ) -> None:
+        """Generic renderer for any polytope with `edges` and `get_transformed_vertices()`."""
+        verts = obj.get_transformed_vertices()
+        for a, b in obj.edges:
+            self.draw_line_4d(verts[a], verts[b], color, width)
