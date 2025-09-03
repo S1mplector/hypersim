@@ -78,6 +78,23 @@ class Shape4D(ABC):
     def face_count(self) -> int:
         """Get the number of faces in the shape."""
         return len(self.faces)
+
+    # Convenience getters (compat with overlays/UI expecting methods)
+    def get_vertex_count(self) -> int:
+        """Return vertex count (method form)."""
+        return self.vertex_count
+
+    def get_edge_count(self) -> int:
+        """Return edge count (method form)."""
+        return self.edge_count
+
+    def get_face_count(self) -> int:
+        """Return face count (method form)."""
+        return self.face_count
+
+    def get_position(self) -> Vector4D:
+        """Return current position vector."""
+        return self.position
     
     # Transformation methods
     def get_transform_matrix(self) -> Matrix4D:

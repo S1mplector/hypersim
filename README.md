@@ -4,9 +4,9 @@ A Python framework for 4D visualization and simulation. This project provides to
 
 ## Features
 
-- 4D geometric primitives (currently supports hypercube/tesseract)
-- 4D to 3D perspective projection
-- Interactive visualization using Matplotlib
+- 4D geometric primitives (hypercube/tesseract, 4D simplex, 16-cell)
+- 4D to 3D perspective projection utilities
+- Interactive visualization using Pygame (real-time controls)
 - Extensible architecture for adding new 4D objects and renderers
 
 ## Installation
@@ -32,23 +32,31 @@ A Python framework for 4D visualization and simulation. This project provides to
 ## Quick Start
 
 ```python
+import pygame
 from hypersim.objects import Hypercube
-from hypersim.visualization import MatplotlibRenderer
-import matplotlib.pyplot as plt
+from hypersim.visualization import PygameRenderer, Color
 
-# Create a renderer
-renderer = MatplotlibRenderer()
+# Create a renderer window
+renderer = PygameRenderer(width=1024, height=768, title="HyperSim - Tesseract")
 
-# Create and add a hypercube to the scene
-hypercube = Hypercube(size=1.5)
-renderer.add_hypercube(hypercube, color='blue', alpha=0.6)
+# Create a hypercube, tweak initial transform
+cube = Hypercube(size=1.5)
+cube.set_position([0, 0, 0, 1.0])
+cube.rotate(xy=0.3, xw=0.2, zw=0.1)
 
-# Animate the rotation
-_ = renderer.animate_rotation(frames=360, interval=50)
-
-# Display the plot
-plt.title('4D Tesseract Projection')
-renderer.show()
+# Minimal render loop
+running = True
+clock = pygame.time.Clock()
+while running:
+    for ev in pygame.event.get():
+        if ev.type == pygame.QUIT:
+            running = False
+    if hasattr(renderer, 'clear'):
+        renderer.clear()
+    renderer.render_4d_object(cube, Color(80, 200, 255), 2)
+    pygame.display.flip()
+    clock.tick(60)
+pygame.quit()
 ```
 
 ## Project Structure
@@ -66,10 +74,11 @@ hypersim/
 
 ## Running Examples
 
-Check the `examples/` directory for example scripts. To run the basic tesseract example:
+Check the `examples/` directory for example scripts. To run the included examples:
 
 ```bash
-python examples/basic_tesseract.py
+python examples/pygame_simplex.py
+python examples/pygame_sixteen_cell.py
 ```
 
 ## Contributing

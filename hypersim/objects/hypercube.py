@@ -59,7 +59,7 @@ class Hypercube(Shape4D):
             neighbors = [
                 (1 - ix, iy, iz, iw),
                 (ix, 1 - iy, iz, iw),
-                (ix, ix, 1 - iz, iw) if False else (ix, iy, 1 - iz, iw),
+                (ix, iy, 1 - iz, iw),
                 (ix, iy, iz, 1 - iw),
             ]
             for nx, ny, nz, nw in neighbors:
