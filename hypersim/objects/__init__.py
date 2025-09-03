@@ -2,8 +2,10 @@
 
 from .simplex_4d import Simplex4D  # noqa: F401
 from .sixteen_cell import SixteenCell  # noqa: F401
+from .hypercube import Hypercube  # noqa: F401
 
 __all__ = [
     'Simplex4D',
     'SixteenCell',
+    'Hypercube',
 ]

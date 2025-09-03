@@ -21,9 +21,9 @@ def main():
     
     # Apply initial rotation for better viewing angle
     sixteen_cell.rotate(
-        angle_xy=0.3,   # Initial XY rotation
-        angle_xw=0.2,   # Initial 4D rotation
-        angle_zw=0.1    # Initial 4D rotation
+        xy=0.3,   # Initial XY rotation
+        xw=0.2,   # Initial 4D rotation
+        zw=0.1    # Initial 4D rotation
     )
     
     # Camera/movement variables
@@ -107,25 +107,25 @@ def main():
         
         # Rotation controls (Arrow keys + additional keys for 4D rotations)
         if keys[pygame.K_LEFT]:  # Rotate around Y axis (XY plane)
-            sixteen_cell.rotate(angle_xy=-rotation_speed * dt)
+            sixteen_cell.rotate(xy=-rotation_speed * dt)
         if keys[pygame.K_RIGHT]:  # Rotate around Y axis (XY plane)
-            sixteen_cell.rotate(angle_xy=rotation_speed * dt)
+            sixteen_cell.rotate(xy=rotation_speed * dt)
         if keys[pygame.K_UP]:  # Rotate around X axis (XZ plane)
-            sixteen_cell.rotate(angle_xz=rotation_speed * dt)
+            sixteen_cell.rotate(xz=rotation_speed * dt)
         if keys[pygame.K_DOWN]:  # Rotate around X axis (XZ plane)
-            sixteen_cell.rotate(angle_xz=-rotation_speed * dt)
+            sixteen_cell.rotate(xz=-rotation_speed * dt)
         if keys[pygame.K_z]:  # 4D rotation XW plane
-            sixteen_cell.rotate(angle_xw=rotation_speed * dt)
+            sixteen_cell.rotate(xw=rotation_speed * dt)
         if keys[pygame.K_x]:  # 4D rotation XW plane
-            sixteen_cell.rotate(angle_xw=-rotation_speed * dt)
+            sixteen_cell.rotate(xw=-rotation_speed * dt)
         if keys[pygame.K_c]:  # 4D rotation YW plane
-            sixteen_cell.rotate(angle_yw=rotation_speed * dt)
+            sixteen_cell.rotate(yw=rotation_speed * dt)
         if keys[pygame.K_v]:  # 4D rotation YW plane
-            sixteen_cell.rotate(angle_yw=-rotation_speed * dt)
+            sixteen_cell.rotate(yw=-rotation_speed * dt)
         if keys[pygame.K_b]:  # 4D rotation ZW plane
-            sixteen_cell.rotate(angle_zw=rotation_speed * dt)
+            sixteen_cell.rotate(zw=rotation_speed * dt)
         if keys[pygame.K_n]:  # 4D rotation ZW plane
-            sixteen_cell.rotate(angle_zw=-rotation_speed * dt)
+            sixteen_cell.rotate(zw=-rotation_speed * dt)
         
         # Apply camera position to 16-cell (move 16-cell relative to camera)
         sixteen_cell.set_position([-camera_pos[0], -camera_pos[1], -camera_pos[2], 1.0 - camera_pos[3]])
